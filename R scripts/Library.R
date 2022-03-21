@@ -666,7 +666,7 @@ addSmallLegend <- function(myPlot=bar_plot, pointSize = 0.25, textSize = 8, spac
 
 DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
                  to_plot=1:10, xlabel='', ylabel='', ID_label="ID", preferred_direction='max', y_axis2=F,
-                 labelsize=3, shrink_legend=F, interactive=F, volume_labs=F, hex_shift="right", x=5, y=3, i=i, summary_stats=T, stat_size=3,stat_adj=10){
+                 labelsize=3, shrink_legend=F, interactive=F, volume_labs=F, v_lab_nudge=-4, hex_shift=NA, x=5, y=3, i=i, summary_stats=T, stat_size=3,stat_adj=10){
   
   # filter for chosen policies
   filter.long=dplyr::filter(long.data, policy %in% to_plot)
@@ -684,10 +684,13 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
     
   }
   
-  
-  
-  filter.long$rank=rep(1:length(to_plot), each=length(unique(filter.long$Tier)))
   filter.wide$rank=if(is.null(metric)){1:length(to_plot)} else {filter.metric$rank}
+  filter.long$rank=NA
+  for(i in 1:length(filter.long$rank)){ # for loop to avoid errors when different number of tiers
+    filter.long$rank[i]=filter.wide$rank[which(filter.wide$ID==filter.long$policy[i])]
+  }
+  
+  #filter.long$rank=rep(1:length(to_plot), each=length(unique(filter.long$Tier)))
   
   
   ############################# plotting ################################
@@ -723,6 +726,7 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
     
   }
   
+  if(!is.na(hex_shift)){
   if(hex_shift=="right" & (is.odd(1+floor(i/(x+0.001))) )){ # Shift odd rows to the right
     bar_plot=bar_plot+
       theme(plot.margin = margin(t=0, r=0, b=0, l=3, unit='cm'))
@@ -730,8 +734,9 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
     bar_plot=bar_plot+
       theme(plot.margin = margin(t=0, r=3, b=0, l=0, unit='cm'))
   }
+  }
   
-  if(volume_labs){bar_plot=bar_plot+geom_text(data=filter.long, aes(x=rank, y= elevation, label=v_lab),color='black', nudge_y = -4, size=text_size, check_overlap = T)}
+  if(volume_labs){bar_plot=bar_plot+geom_text(data=filter.long, aes(x=rank, y= elevation, label=v_lab),color='black', nudge_y = v_lab_nudge, size=text_size, check_overlap = T)}
   
   if(is.null(metric)){bar_plot=bar_plot+theme(axis.ticks.x=element_blank(), axis.text.x = element_blank())}
   
@@ -748,9 +753,6 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
     #annotate("text", x=min(filter.long$rank)-.5, y=1080, label=paste0("ntiers=", round(mean(filter.wide$nTiers),1)), hjust=0, size=stat_size)
     
   }
-  
-  
-  return(bar_plot)
   
   # ggtitle(paste(metric_label, 'rank for selected policies', sep=' '))+
   
@@ -786,6 +788,8 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
     int_plot_2y$x$layout$yaxis$autorange = FALSE
     return(int_plot_2y)
     
+  } else {
+    return(bar_plot) # not interactive
   }
   
   

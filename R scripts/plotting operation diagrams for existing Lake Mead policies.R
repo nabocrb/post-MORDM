@@ -54,5 +54,20 @@ existing_long=data.frame(policy,Tier, delta, v_lab=paste (volume, ""), elevation
 existing_policies=DV_plot(long.data = existing_long, wide.data = existing_wide,to_plot = 1:5,metric = NULL, xlabel = "",ID_label = NULL,y_axis2 = F,shrink_legend = F, interactive = F, volume_labs = T, labelsize = 4.5, hex_shift = F)
 existing_policies=existing_policies+ylab("pool elevation (ft msl)")
 existing_policies
-ggsave(filename = "IG+Minute323+DCP+BWSCP.pdf", plot = existing_policies, device = "pdf",width = 8, height =8)
+
+# plot the combined policy compared to 3 very similar policies in neuron 3
+
+similar=c(85, 233, 416) # IDs of policies in neuron 3 with very similar T1e, T1V, maxV compared to combined
+
+compare_long=rbind(dplyr::filter(existing_long, policy==5), dplyr::filter(long_data, policy %in% similar))
+temp=str_split(string = compare_long$v_lab, pattern = " ") # creates list
+compare_long$v_lab=do.call(rbind.data.frame, temp)[,1] # convert to df, add to compare_long
+compare_wide=rbind(dplyr::filter(existing_wide, ID==5), dplyr::filter(wide_data, ID %in% similar)[,-2])
+compare_policies=DV_plot(long.data = compare_long, wide.data = compare_wide,to_plot = c(5,similar),metric = NULL, xlabel = "",
+                         ID_label = NULL,y_axis2 = F,shrink_legend = F, interactive = F,
+                         volume_labs = T,v_lab_nudge = -2, labelsize = 3, hex_shift = F, summary_stats = F )
+compare_policies=compare_policies+ylab("pool elevation (ft msl)")
+compare_policies
+
+
 

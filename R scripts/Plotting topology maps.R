@@ -3,14 +3,14 @@ library(stringr)
 library(kohonen)
 rm(list = ls())
 
-source("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/Library.R")
+source("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/post-MORDM/R scripts/Library.R")
 
 ###############################################################################################
 ################################# Plotting SOM fit metrics ####################################
 
-setwd("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/results/Optimization - all policies")
+setwd("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/post-MORDM/case study data")
 cube=read.table("Hypercube design.txt") # the latin hypercube design of SOM parameters
-SOMparameters=read.table("SOM parameters.txt") # SOM parameters as exactly inputted to superSOM. Some parameters are calculated and/or rounded from cube
+SOMparameters=read.table("SOM parameters.txt") # SOM parameters as exactly inputted to SOM. Some parameters are calculated and/or rounded from cube
 SOMparameters$nodes=SOMparameters$x_dim*SOMparameters$y_dim
 SOMfit=read.table("SOM quality metrics.txt") # goodness of SOM fit, calculated for every sample using aweSOM package
 
