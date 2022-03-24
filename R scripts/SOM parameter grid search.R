@@ -1,20 +1,12 @@
-### SOM grid search experiment
-### Nathan Bonham
-### 8/30/21
+### post-MORDM: SOM grid search experiment
+### coded by Nathan Bonham
+### March 2022
 
-library(kohonen) # SOM
-library(aweSOM) # quality metrics: quantization error (perc. variance), topo error
-library(lhs) # latin hypercube design of SOM parameters
-library(clusterSim) # Davies-Bouldin index
-rm(list=ls())
+# load packages and custom functions
+source(here("R scripts","Library.R")) 
 
-source("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/Library.R")
-
-# Import DV
-setwd('G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/data')
-#setwd('G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/data')
-Archive='Archive_463_Condensed.txt'
-DV=read.table(Archive, header = T, sep = "")
+# Import Lake Mead DV
+DV=read.table(here("case study data", "Archive_463_Condensed.txt"), header = T, sep = "")
 
 #### k means clustering to get a sense for how many nodes we might want
 # ALL POLICIES
@@ -46,7 +38,7 @@ ggplot(data = DB.df, aes(x=k, y=DBindex))+
 
 # conclusion: Davies Bouldin is lowest at k = 13 except where k > 80.
 # Since the index values are not much better above k > 80, let's focus closer to k=13.
-# Let's search from 4 to 25 nodes with SOM and look at k=13 afterwards
+# Let's search from 4 to 25 neurons
 
 ######################################################################
 ########################## lhs #######################################
@@ -57,11 +49,11 @@ n_samples=1000
 
 set.seed(7)
 
-#unit_cube=geneticLHS(n=n_samples, k=4, criterium = 'Maximin') # optimizes Maximin optimality criterion.s
 unit_cube=improvedLHS(n=n_samples, k=5) # optimizes for euclidean distance between points
 
 unit_cube=data.frame(unit_cube)
 colnames(unit_cube)=c("radius", "n_nodes", "distance_fnc", "neighbor_fnc", "toroidal")
+
 # convert to uniform sample across given ranges
 
 radius=c(0,1) # as a fraction of max unit-to-unit distances
@@ -126,7 +118,7 @@ for (i in toroidal){
 fraction
 
 ##################################################################################################################
-############################## calculate SOM map and report quality metrics for each #############################
+############################## initialize and train SOMs, report quality metrics for each #############################
 
 scaled_data= scale.optimization
 
@@ -179,12 +171,13 @@ for (i in 1:nrow(cube)){
   # create nueron initialization matrix
   
   D1=seq(PC1range[1], PC1range[2], length.out = x) # sequence of nuerons along PC1
-  D2=seq(PC2range[1], PC2range[2], length.out = y) # sequence of nuerons along PC1
+  D2=seq(PC2range[1], PC2range[2], length.out = y) # sequence of nuerons along PC2
   
   PG=expand.grid(D1,D2) # create rectangular matrix where D1 is repeated for every value of D2, projected in PC space
   
   # plot(x=PG$Var1,y=PG$Var2, type = "p" ) # to see example of the grid in PC space
   # points(PCs[,1], PCs[,2], col="red") # to see the policies in PC space
+  
   # unproject the projected grid (PG) back into original data space
   
   IG=as.matrix(PG) %*% t(RM) # neuron initialization matrix
@@ -215,29 +208,7 @@ for (i in 1:nrow(cube)){
   
 }
 
-setwd('G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/results/Optimization - all policies')
-write.table(metric.df, file="SOM quality metrics.txt")
-write.table(params.df, file = "SOM parameters.txt")
-write.table(cube, file="Hypercube design.txt")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# write.table(here("case study data"),metric.df, file="SOM quality metrics.txt")
+# write.table(here("case study data"),params.df, file = "SOM parameters.txt")
+# write.table(here("case study data"),cube, file="Hypercube design.txt")
 

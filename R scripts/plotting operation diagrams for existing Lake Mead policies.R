@@ -2,6 +2,11 @@
 # Nathan Bonham
 # March 2022
 
+# load packages and custom functions
+source(here("R scripts","Library.R")) 
+
+########################################################################
+############# Current Mead operations (Fig 4) ##########################
 
 # Combined operation = Interim Guidelines + BWSCP + DCP
 
@@ -23,7 +28,6 @@ Min323e=c(1075,1050,1025,895,895,895,895,895,895)
 DCPe=c(1090,1045,1040,1035,1030,895,895,895,895)
 BWSCPe=c(1090,1075,1050,1045,1040,1035,1030,1025, 895)
 Combinede=c(1090,1075,1050,1045,1040,1035,1030,1025, 895)
-
 
 IDdelta=IGe[-9]-IGe[-1]
 Min323delta=Min323e[-9]-Min323e[-1]
@@ -55,7 +59,8 @@ existing_policies=DV_plot(long.data = existing_long, wide.data = existing_wide,t
 existing_policies=existing_policies+ylab("pool elevation (ft msl)")
 existing_policies
 
-# plot the combined policy compared to 3 very similar policies in neuron 3
+############################################################################
+#### combined policy vs  3 very similar policies in neuron 3 (App. A15) ####
 
 similar=c(85, 233, 416) # IDs of policies in neuron 3 with very similar T1e, T1V, maxV compared to combined
 
@@ -68,6 +73,4 @@ compare_policies=DV_plot(long.data = compare_long, wide.data = compare_wide,to_p
                          volume_labs = T,v_lab_nudge = -2, labelsize = 3, hex_shift = F, summary_stats = F )
 compare_policies=compare_policies+ylab("pool elevation (ft msl)")
 compare_policies
-
-
 

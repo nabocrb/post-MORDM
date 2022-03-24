@@ -2,6 +2,13 @@
 # March 2022
 # Nathan Bonham
 
+rm(list=ls()) # clear the environment
+
+# load libraries
+
+library(here) # for relative file paths
+library(magick)
+library(stringr)
 library(dplyr)
 library(ggplot2)
 library(GGally)
@@ -12,18 +19,23 @@ library(cowplot) # plot_grid
 library(aweSOM)
 library(ggpubr) # ggarrange
 library(ggforce) # circles
+library(GGally) # scatter matri plots
 library(fmsb) # radar plots
 library(shadowtext)
+library(kohonen) # SOM
+library(aweSOM) # quality metrics: quantization error (perc. variance), topo error
+library(lhs) # latin hypercube design of SOM parameters
+library(clusterSim) # Davies-Bouldin index
 
-####################### load baseline objectives data #####################################
+####################### load objectives data from MOEA #####################################
 
-tradeoff_dfs=readRDS("G:/My Drive/CU Boulder/Phase 3 Robustness Calculations/R/scripts/Interactive dashboards/Robustness App All policies V5/CRB-Robustness-App-BOR/tradeoff_dataframes.rds")
+tradeoff_dfs=readRDS(here("case study data", "tradeoff_dataframes.rds"))
 
 optimization=tradeoff_dfs$optimization
 
 ######################################### Load SOW ensemble ###################################
 
-temp=readRDS("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/data/SOW ensemble 500_300_100.rds")
+temp=readRDS(here("case study data", "SOW ensemble 500_300_100.rds"))
 cLHS500all=temp[[1]]$SOW
 
 ### select 16 observable uncertainty metrics from cLHS500
@@ -34,7 +46,7 @@ cLHS500=dplyr::select(cLHS500, -contains("RolDef"))
 ############################################################################################
 ####################### find policy closest to prototype vector of each SOM nueron (I call them captains) ###################################################
 
-findCaptains=function(mySOM){
+findCaptains=function(mySOM){ # function not used in post-MORDM paper
   
   ### find policy closest to each node
   
@@ -65,7 +77,7 @@ findCaptains=function(mySOM){
 ####################### robustness metrics ###################################################
 
 # objective values for each policy and each SOW
-obj_all=read.table('G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/data/objectives_all463.txt') # load data for calculating robustness
+obj_all=read.table(here("case study data", "objectives_all463.txt")) # load data for calculating robustness
 
 # regret2 is short for regret from best
 
@@ -350,8 +362,10 @@ LaplacePIR=function(data=obj, objectives=c('LB.Shortage.Volume', 'Mead.1000', 'P
   
 } # end function
 
+##################################################################
+############### SOM helper functions #############################
 
-######################################## convert fraction to SOM radius #################################
+#### convert fraction to SOM radius
 
 fraction2radius=function(fraction, x,y,shape){
   
@@ -424,8 +438,8 @@ unit.distances=function (grid, toroidal) # taken from Kohonen source code
   }
 }
 
+###########################################################################################
 ######################################### Plotting ########################################
-############################################################################################
 
 #### topology map plotting functions
 
@@ -646,9 +660,7 @@ SOM_bubbles=function(SOMlist, data, units, my_order, title="", ncol, nrow, min_c
 
 # import Lake Mead DV values
 
-setwd("G:/My Drive/CU Boulder/CRB publications/Uncertainty characterization and RDM sensitivity paper/R/data")
-
-bar_plot_data=readRDS(file='data for stacked bar plot.rds')
+bar_plot_data=readRDS(here("case study data",'data for stacked bar plot.rds'))
 long_data=bar_plot_data$long_data
 wide_data=bar_plot_data$wide_data
 wide_data$ID=1:nrow(wide_data)
@@ -690,9 +702,7 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
     filter.long$rank[i]=filter.wide$rank[which(filter.wide$ID==filter.long$policy[i])]
   }
   
-  #filter.long$rank=rep(1:length(to_plot), each=length(unique(filter.long$Tier)))
-  
-  
+
   ############################# plotting ################################
   text_size=labelsize
   
@@ -797,8 +807,8 @@ DV_plot=function(long.data=long_data, wide.data=wide_data, metric= NULL,
 
 #### additional plotting functions, used for figures in appendix
 
-
-### function to add vertical line to pdf to indicate mean of each metric plot on diagonal of ggpairs functions
+### ggpairs helper functions (Appendix A4 a)
+## function to add vertical line to pdf to indicate mean of each metric plot on diagonal of ggpairs functions
 ggpairsMean <- function(data, mapping, ...){ 
   meanX <- mean(eval_data_col(data, mapping$x), na.rm = TRUE)
   
@@ -813,7 +823,22 @@ ggpairsMean <- function(data, mapping, ...){
   p
 }
 
+## histograms, instead of pdf
 
+ggpairs_hist <- function(data, mapping, ...){
+  meanX <- mean(eval_data_col(data, mapping$x), na.rm = TRUE)
+  
+  text=as.character(round(meanX, digits=2))
+  #text=paste('mean=',round(meanX, digits=2))
+  
+  p <- ggplot(data = data, mapping = mapping) + 
+    geom_histogram(bins = 20)+
+    #geom_density(adjust=2)+
+    geom_vline(xintercept = meanX,color='red',linetype='dashed' ) +
+    
+    annotate('text', label=text,x=Inf, y=Inf, vjust=1, hjust=1, size=4, col='red')
+  p
+}
 
 ### ggpairs scatter matrix
 
@@ -823,7 +848,7 @@ my_ggpairs=function(chosen){
     chosen,
     upper=list(continuous='cor'),
     lower=list(continuous=wrap('points', alpha=0.3)),
-    diag=list(continuous=ggpairsMean)
+    diag=list(continuous=ggpairs_hist)
     
   )
   pm=pm + theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -832,15 +857,11 @@ my_ggpairs=function(chosen){
 
 }
 
-
-
-
-##### plot Flow Duration Curves
-
+### Flow Duration Curves (Appendix A4 b)
 
 plotFDC=function(subsample, line_width=2, directory="~"){
 
-  df=read.csv('G:/My Drive/CU Boulder/Phase 2 Uncertainty Characterization/R/hydrology_all_annual.csv',
+  df=read.csv(here('case study data','hydrology_all_annual.csv'),
               stringsAsFactors = F)
   df$ID=paste(df$Scenario, df$TraceNumber, sep='.') # same as above, just for the original data frame
 
@@ -907,7 +928,7 @@ plotFDC=function(subsample, line_width=2, directory="~"){
            cex=0.89)
     
     #savePlot(filename = paste0(directory,"/plot",s, ".pdf"), type = "pdf")
-    savePlot(filename = paste0(directory,"/plot",s, ".jpeg"), type = "jpeg", device = )
+    #savePlot(filename = paste0(directory,"/plot",s, ".jpeg"), type = "jpeg", device = )
     dev.off()
     
     #FDCplots[[s]]=recordPlot()
@@ -920,7 +941,7 @@ plotFDC=function(subsample, line_width=2, directory="~"){
 }
 
 
-#### wrapper to plot_ly parallel coordinates
+#### wrapper to plot_ly parallel coordinates (Appendix A3, A5)
 
 par_coords=function(data, max_cols=NULL, n_var, color_var, title='User selected metrics', labels=colnames(data), source=NULL, policy_ID=NULL,
                     color_scale="blue-red", reverse_scale=F, legendTF=F, colorbarTitle="", maintainAxesRange=T, axes_data=data, show_ID_front=F, 
